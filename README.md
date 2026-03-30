@@ -9,7 +9,7 @@
 </p>
 
 > Basics of UDP Attacks with Sockets, Use for educational purposes only.
-<img src ="https://github.com/user-attachments/assets/8aa32acc-4422-448f-9ee8-c30d17ff4993" />
+<img src ="https://github.com/user-attachments/assets/c907a376-1da1-4cf0-b293-a03222beafad" />
 <br>
 <br>
 
