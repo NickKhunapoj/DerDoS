@@ -14,7 +14,7 @@ from qfluentwidgets import (
     setThemeColor, StrongBodyLabel, SimpleCardWidget, TitleLabel,
     ToolButton, NavigationItemPosition, ComboBox, LargeTitleLabel,
     SettingCardGroup, SettingCard, DropDownPushButton, RoundMenu, Action,
-    CompactSpinBox, SplashScreen
+    CompactSpinBox, SplashScreen, HyperlinkCard
 )
 
 class ProgressThread(QThread):
@@ -59,13 +59,14 @@ class SettingsWidget(QWidget):
         
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(36, 36, 36, 36)
+        self.main_layout.setSpacing(10)
         
         self.title = LargeTitleLabel('Settings')
         self.main_layout.addWidget(self.title)
         self.main_layout.addSpacing(20)
         
-        self.personalization_group = SettingCardGroup('Personalization', self)
-        self.theme_card = SettingCard(FIF.BRUSH, 'Application Theme', 'Change the appearance of the application')
+        self.appearance_group = SettingCardGroup('Appearance', self)
+        self.theme_card = SettingCard(FIF.BRUSH, 'App theme', 'Select which app theme to display')
         
         saved_theme = self.app_settings.value("theme", "Auto")
         self.theme_btn = DropDownPushButton(saved_theme)
@@ -85,13 +86,11 @@ class SettingsWidget(QWidget):
         self.theme_card.hBoxLayout.addWidget(self.theme_btn)
         self.theme_card.hBoxLayout.addSpacing(16)
         
-        self.personalization_group.addSettingCard(self.theme_card)
-        self.main_layout.addWidget(self.personalization_group)
-        
-        self.main_layout.addSpacing(20)
+        self.appearance_group.addSettingCard(self.theme_card)
+        self.main_layout.addWidget(self.appearance_group)
         
         self.about_group = SettingCardGroup('About', self)
-        self.about_card = SettingCard(FIF.INFO, 'DerDos', 'Version 2.0 \nBasics of UDP Attacks with Sockets, Use for educational purposes only.\nLicensed under the GPLv3 License (See LICENSE file).')
+        self.about_card = SettingCard(FIF.INFO, 'About app', 'DerDos Version 2.0\nLicensed under the GPLv3 License')
         
         self.license_btn = PushButton('View License')
         self.license_btn.clicked.connect(lambda: os.startfile('LICENSE') if os.path.exists('LICENSE') else None)
@@ -99,6 +98,17 @@ class SettingsWidget(QWidget):
         self.about_card.hBoxLayout.addSpacing(16)
         
         self.about_group.addSettingCard(self.about_card)
+        
+        # HyperlinkCard(url, text, icon, title, content)
+        self.source_code_card = HyperlinkCard(
+            "https://github.com/ATOMIC09/DerDoS",
+            "Open GitHub",
+            FIF.LINK,
+            "Source code",
+            "View the repository for this project on GitHub"
+        )
+        self.about_group.addSettingCard(self.source_code_card)
+        
         self.main_layout.addWidget(self.about_group)
         
         self.main_layout.addStretch()
