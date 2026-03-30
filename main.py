@@ -3,7 +3,7 @@ import sys
 import os
 import socket
 
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QSettings
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QSettings, QSize
 from PyQt6.QtGui import QIcon, QFont, QIntValidator
 from PyQt6.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QWidget
 
@@ -14,7 +14,7 @@ from qfluentwidgets import (
     setThemeColor, StrongBodyLabel, SimpleCardWidget, TitleLabel,
     ToolButton, NavigationItemPosition, ComboBox, LargeTitleLabel,
     SettingCardGroup, SettingCard, DropDownPushButton, RoundMenu, Action,
-    CompactSpinBox
+    CompactSpinBox, SplashScreen
 )
 
 class ProgressThread(QThread):
@@ -69,7 +69,11 @@ class SettingsWidget(QWidget):
         
         saved_theme = self.app_settings.value("theme", "Auto")
         self.theme_btn = DropDownPushButton(saved_theme)
-        self.theme_menu = RoundMenu(parent=self.theme_btn)
+        
+        # Remove parent reference from button and fix qt shadow flags to prevent nested border
+        self.theme_menu = RoundMenu(parent=self.window())
+        self.theme_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.theme_menu.setWindowFlags(self.theme_menu.windowFlags() | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint)
         
         for theme in ['Auto', 'Light', 'Dark']:
             action = Action(theme)
@@ -84,8 +88,16 @@ class SettingsWidget(QWidget):
         self.personalization_group.addSettingCard(self.theme_card)
         self.main_layout.addWidget(self.personalization_group)
         
+        self.main_layout.addSpacing(20)
+        
         self.about_group = SettingCardGroup('About', self)
-        self.about_card = SettingCard(FIF.INFO, 'DerDos', 'Version 2.0 \nBasics of UDP Attacks with Sockets, Use for educational purposes only.')
+        self.about_card = SettingCard(FIF.INFO, 'DerDos', 'Version 2.0 \nBasics of UDP Attacks with Sockets, Use for educational purposes only.\nLicensed under the GPLv3 License (See LICENSE file).')
+        
+        self.license_btn = PushButton('View License')
+        self.license_btn.clicked.connect(lambda: os.startfile('LICENSE') if os.path.exists('LICENSE') else None)
+        self.about_card.hBoxLayout.addWidget(self.license_btn)
+        self.about_card.hBoxLayout.addSpacing(16)
+        
         self.about_group.addSettingCard(self.about_card)
         self.main_layout.addWidget(self.about_group)
         
@@ -393,6 +405,11 @@ class MainWindow(FluentWindow):
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
             
+        # Initialize Splash Screen
+        self.splashScreen = SplashScreen(self.windowIcon(), self)
+        self.splashScreen.setIconSize(QSize(102, 102))
+        self.splashScreen.raise_()
+        
         self.resize(1100, 750)
         self.setMinimumSize(850, 600)
         
@@ -403,9 +420,12 @@ class MainWindow(FluentWindow):
         
         self.initNavigation()
         
+        # Hide the splash screen
+        self.splashScreen.finish()
+        
     def initNavigation(self):
-        self.navigationInterface.addSeparator()
         self.addSubInterface(self.attack_suite, FIF.COMMAND_PROMPT, 'Attack Suite')
+        self.navigationInterface.addSeparator(NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.settings, FIF.SETTING, 'Settings', NavigationItemPosition.BOTTOM)
         
         self.switchTo(self.attack_suite)
