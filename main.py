@@ -17,13 +17,6 @@ from qfluentwidgets import (
     CompactSpinBox, SplashScreen, HyperlinkCard
 )
 
-class ProgressThread(QThread):
-    progress_updated = pyqtSignal(int)
-    def run(self):
-        for i in range(101):
-            self.progress_updated.emit(i)
-            QThread.msleep(20)
-
 class WorkerThread(QThread):
     error_occurred = pyqtSignal(str)
     def __init__(self, target_ip, target_port, packet_size, parent=None):
@@ -207,6 +200,8 @@ class AttackWidget(QWidget):
         self.packet_slider = Slider(Qt.Orientation.Horizontal)
         self.packet_slider.setMinimum(1024)
         self.packet_slider.setMaximum(65500)
+        self.packet_slider.setSingleStep(1024)
+        self.packet_slider.setPageStep(1024)
         self.packet_slider.setValue(9216)
         
         def on_input_changed():
@@ -215,7 +210,11 @@ class AttackWidget(QWidget):
                 self.packet_slider.setValue(int(val))
                 
         def on_slider_changed(v):
-            self.packet_input.setText(str(v))
+            snapped = max(1024, (v // 1024) * 1024)
+            if v != snapped:
+                self.packet_slider.setValue(snapped)
+                return
+            self.packet_input.setText(str(snapped))
             
         self.packet_input.textChanged.connect(on_input_changed)
         self.packet_slider.valueChanged.connect(on_slider_changed)
@@ -294,9 +293,8 @@ class AttackWidget(QWidget):
         self.terminal_layout.addWidget(self.text_edit)
         self.right_layout.addWidget(self.terminal_card)
         
-        self.progress_bar = ProgressBar()
-        self.progress_bar.setValue(0)
-        self.right_layout.addWidget(self.progress_bar)
+        self.terminal_card.setFixedHeight(446)
+        self.right_layout.addStretch()
         
         self.main_layout.addWidget(self.left_panel, 1)
         self.main_layout.addWidget(self.right_panel, 1)
@@ -312,6 +310,10 @@ class AttackWidget(QWidget):
         self.text_edit.append('Welcome to DerDoS v2.0\n')
         self.text_edit.append('[!] WARNING: This tool should only be used for educational purposes and network testing.\n')
         self.text_edit.append('Ready...')
+        if hasattr(self, 'packets_sent_num'):
+            self.packets_sent_num.setText('0')
+        if hasattr(self, 'data_sent_num'):
+            self.data_sent_num.setText('0.00 MB')
         
     def shoot(self):
         if not self.ip_input.text() or not self.port_input.text():
@@ -351,10 +353,7 @@ class AttackWidget(QWidget):
         self.worker = WorkerThread(target_ip, target_port, packet_size)
         self.worker.error_occurred.connect(self.handle_error)
         
-        self.progress_thread = ProgressThread()
-        self.progress_thread.progress_updated.connect(self.progress_bar.setValue)
-        self.progress_thread.finished.connect(self.start_attack)
-        self.progress_thread.start()
+        self.start_attack()
 
     def start_attack(self):
         self.text_edit.append('> Attack sequence initiated.')
@@ -384,7 +383,6 @@ class AttackWidget(QWidget):
             except Exception:
                 pass
             
-        self.progress_bar.setValue(0)
         self.text_edit.append('\n> Attack halted by user.')
         self.text_edit.append('Ready... \n')
         self.ip_input.setEnabled(True)
